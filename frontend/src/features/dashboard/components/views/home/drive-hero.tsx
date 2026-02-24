@@ -34,7 +34,7 @@ export const DriveHero = ({ showWelcome = true, title }: DriveHeroProps) => {
       <div className="absolute right-0 top-0 z-10"></div>
       {showWelcome && (
         <h1 className="mb-6 text-center text-2xl font-normal text-foreground">
-          {title || 'Welcome to Opndrive'}
+          {title || 'Welcome to NAS'}
         </h1>
       )}
       <div

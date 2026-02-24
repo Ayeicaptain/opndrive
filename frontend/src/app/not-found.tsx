@@ -58,7 +58,7 @@ export default function NotFound() {
 
         <div className="flex justify-center">
           <Button asChild size="lg" className="px-8">
-            <Link href="/">Return to Homepage</Link>
+            <Link href="/login">Go to Login</Link>
           </Button>
         </div>
       </div>
