@@ -30,11 +30,16 @@ export default function LoginPage() {
       return '';
     }
 
-    const url = new URL('/oauth2/authorize', normalizeCognitoDomain(cognitoDomain));
-    url.searchParams.set('client_id', cognitoClientId);
-    url.searchParams.set('response_type', cognitoResponseType);
-    url.searchParams.set('scope', cognitoScope);
-    url.searchParams.set('redirect_uri', cognitoRedirectUri);
+    const url = cognitoLoginUrl
+      ? new URL(cognitoLoginUrl)
+      : new URL('/oauth2/authorize', normalizeCognitoDomain(cognitoDomain));
+
+    if (!cognitoLoginUrl) {
+      url.searchParams.set('client_id', cognitoClientId);
+      url.searchParams.set('response_type', cognitoResponseType);
+      url.searchParams.set('scope', cognitoScope);
+      url.searchParams.set('redirect_uri', cognitoRedirectUri);
+    }
 
     return url.toString();
   }, [
