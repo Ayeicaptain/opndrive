@@ -5,42 +5,38 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/shared/components/ui';
-import { getCurrentCognitoUser, startHostedUiSignIn } from '@/lib/cognito';
+import { useAuth } from 'react-oidc-context';
+import { hasOidcConfig } from '@/lib/oidc-client';
 
 export default function LoginPage() {
   const router = useRouter();
+  const oidcAuth = useAuth();
   const [error, setError] = useState('');
-  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
-    const checkExistingSession = async () => {
+    if (oidcAuth.isAuthenticated) {
       const hasS3Session = localStorage.getItem('s3_user_session');
-      if (hasS3Session) {
-        router.push('/dashboard');
-        return;
-      }
+      router.push(hasS3Session ? '/dashboard' : '/connect');
+    }
+  }, [oidcAuth.isAuthenticated, router]);
 
-      const cognitoUser = await getCurrentCognitoUser();
-      if (cognitoUser) {
-        router.push('/connect');
-      }
-    };
-
-    checkExistingSession();
-  }, [router]);
-
-  const handleHostedLogin = () => {
+  const handleHostedLogin = async () => {
     setError('');
-    setIsRedirecting(true);
 
     try {
-      startHostedUiSignIn();
+      if (!hasOidcConfig()) {
+        throw new Error(
+          'Cognito Hosted UI is not configured. Set NEXT_PUBLIC_COGNITO_DOMAIN and NEXT_PUBLIC_COGNITO_CLIENT_ID.'
+        );
+      }
+      await oidcAuth.signinRedirect();
     } catch (err) {
       const fallbackMessage = 'Failed to redirect to Cognito Hosted UI.';
       setError(err instanceof Error ? err.message : fallbackMessage);
-      setIsRedirecting(false);
     }
   };
+
+  const isBusy = oidcAuth.isLoading || oidcAuth.activeNavigator === 'signinRedirect';
 
   return (
     <div className="min-h-screen bg-background">
@@ -64,16 +60,13 @@ export default function LoginPage() {
           </p>
 
           <div className="mt-6 space-y-4">
-            <Button
-              type="button"
-              className="w-full"
-              disabled={isRedirecting}
-              onClick={handleHostedLogin}
-            >
-              {isRedirecting ? 'Redirecting...' : 'Continue with Cognito'}
+            <Button type="button" className="w-full" disabled={isBusy} onClick={handleHostedLogin}>
+              {isBusy ? 'Redirecting...' : 'Continue with Cognito'}
             </Button>
 
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {(error || oidcAuth.error) && (
+              <p className="text-sm text-destructive">{error || oidcAuth.error?.message}</p>
+            )}
           </div>
         </div>
       </main>

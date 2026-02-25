@@ -4,6 +4,7 @@ import { NotificationProvider } from '@/context/notification-context';
 import { ZustandBridge } from '@/context/zustand-bridge';
 import { UploadProvider } from '@/features/upload/context/upload-context';
 import { ThemeProvider } from '@/providers/theme-provider';
+import { OidcProvider } from '@/providers/oidc-provider';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -152,14 +153,16 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <AuthProvider>
-          <ZustandBridge />
-          <ThemeProvider defaultTheme="system" storageKey="ui-theme">
-            <UploadProvider>
-              <NotificationProvider>{children}</NotificationProvider>
-            </UploadProvider>
-          </ThemeProvider>
-        </AuthProvider>
+        <OidcProvider>
+          <AuthProvider>
+            <ZustandBridge />
+            <ThemeProvider defaultTheme="system" storageKey="ui-theme">
+              <UploadProvider>
+                <NotificationProvider>{children}</NotificationProvider>
+              </UploadProvider>
+            </ThemeProvider>
+          </AuthProvider>
+        </OidcProvider>
       </body>
     </html>
   );

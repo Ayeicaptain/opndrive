@@ -168,17 +168,20 @@ We welcome contributions from developers of all skill levels!
 
 ### Cognito Login Configuration
 
-To use Cognito-based login in the frontend, set these variables in your runtime
-environment:
+This frontend uses **AWS Cognito Hosted UI** with `oidc-client-ts` and
+`react-oidc-context`.
+
+1. Configure your Cognito app client with allowed callback/logout URLs and
+   scopes (for example: `openid profile email`).
+2. Set these runtime variables:
 
 ```bash
-NEXT_PUBLIC_COGNITO_USER_POOL_ID=<your_user_pool_id>
 NEXT_PUBLIC_COGNITO_CLIENT_ID=<your_app_client_id>
-NEXT_PUBLIC_COGNITO_DOMAIN=<your_cognito_domain> # example: https://your-domain.auth.us-east-1.amazoncognito.com
+NEXT_PUBLIC_COGNITO_DOMAIN=<your_cognito_domain> # example: https://your-domain.auth.ap-southeast-1.amazoncognito.com
 # Optional overrides:
 # NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN=http://localhost:3000/auth/callback
 # NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT=http://localhost:3000/
-# NEXT_PUBLIC_COGNITO_SCOPE=openid email profile
+# NEXT_PUBLIC_COGNITO_SCOPE=openid profile email
 ```
 
 If required variables are not configured, login will show a configuration error

@@ -12,7 +12,7 @@ import FAQSection from '@/features/landing-page/components/faq-section';
 import CTASection from '@/features/landing-page/components/cta-section';
 import ThemeToggleCustom from '@/shared/components/layout/ThemeToggleCustom';
 import { useOpndriveStars } from '@/hooks/use-github-stars';
-import { getCurrentCognitoUser } from '@/lib/cognito';
+import { useAuth } from 'react-oidc-context';
 
 const navItems = [
   { label: 'Home', href: '#hero' },
@@ -30,6 +30,7 @@ export default function LandingPage() {
 
   // Use custom hook for GitHub stars
   const { stars } = useOpndriveStars();
+  const oidcAuth = useAuth();
 
   // Simple scroll detection to show navbar after hero section
   useEffect(() => {
@@ -58,8 +59,7 @@ export default function LandingPage() {
       if (stored) {
         router.push('/dashboard');
       } else {
-        const cognitoUser = await getCurrentCognitoUser();
-        router.push(cognitoUser ? '/connect' : '/login');
+        router.push(oidcAuth.isAuthenticated ? '/connect' : '/login');
       }
     } catch (error) {
       console.error('Error during navigation:', error);

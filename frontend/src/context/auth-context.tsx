@@ -10,7 +10,7 @@ import {
   SignedUrlUploadManager,
 } from '@opndrive/s3-api';
 import { useDriveStore } from './data-context';
-import { signOutCognitoUser } from '@/lib/cognito';
+import { createUserManager, getHostedUiLogoutUrl } from '@/lib/oidc-client';
 
 interface AuthContextType {
   apiS3: BYOS3ApiProvider | null;
@@ -174,7 +174,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       localStorage.removeItem(STORAGE_KEY);
 
       // End Cognito app session
-      signOutCognitoUser();
+      try {
+        createUserManager().removeUser();
+        window.location.assign(getHostedUiLogoutUrl());
+      } catch {
+        // no-op when OIDC config is unavailable
+      }
 
       // Navigate away from authenticated routes first
       router.push('/');

@@ -1,29 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { handleHostedUiCallback } from '@/lib/cognito';
+import { useAuth } from 'react-oidc-context';
 
 export default function HostedUiCallbackPage() {
   const router = useRouter();
-  const [error, setError] = useState('');
+  const oidcAuth = useAuth();
 
   useEffect(() => {
-    try {
-      handleHostedUiCallback();
+    if (oidcAuth.isAuthenticated) {
       router.replace('/connect');
-    } catch (err) {
-      const fallbackMessage = 'Failed to complete Cognito login callback.';
-      setError(err instanceof Error ? err.message : fallbackMessage);
     }
-  }, [router]);
+  }, [oidcAuth.isAuthenticated, router]);
 
-  if (error) {
+  if (oidcAuth.error) {
     return (
       <div className="flex h-screen items-center justify-center px-4">
         <div className="max-w-md rounded-lg border border-border bg-card p-6">
           <h1 className="text-lg font-semibold text-foreground">Authentication Error</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{error}</p>
+          <p className="mt-2 text-sm text-muted-foreground">{oidcAuth.error.message}</p>
         </div>
       </div>
     );
