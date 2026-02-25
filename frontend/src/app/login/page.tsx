@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Lock, Mail } from 'lucide-react';
 import { Button } from '@/shared/components/ui';
-
-const LOGIN_KEY = 'opndrive_login_session';
+import { getCurrentCognitoUser, signInWithCognito } from '@/lib/cognito';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,10 +15,20 @@ export default function LoginPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const hasS3Session = localStorage.getItem('s3_user_session');
-    if (hasS3Session) {
-      router.push('/dashboard');
-    }
+    const checkExistingSession = async () => {
+      const hasS3Session = localStorage.getItem('s3_user_session');
+      if (hasS3Session) {
+        router.push('/dashboard');
+        return;
+      }
+
+      const cognitoUser = await getCurrentCognitoUser();
+      if (cognitoUser) {
+        router.push('/connect');
+      }
+    };
+
+    checkExistingSession();
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,17 +41,16 @@ export default function LoginPage() {
     }
 
     setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 300));
 
-    localStorage.setItem(
-      LOGIN_KEY,
-      JSON.stringify({
-        email: email.trim(),
-        loggedInAt: new Date().toISOString(),
-      })
-    );
-
-    router.push('/connect');
+    try {
+      await signInWithCognito(email.trim(), password.trim());
+      router.push('/connect');
+    } catch (err) {
+      const fallbackMessage = 'Sign in failed. Please verify your Cognito credentials.';
+      setError(err instanceof Error ? err.message : fallbackMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

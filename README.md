@@ -1,6 +1,4 @@
-
 <img width="1920" height="719" alt="opndrive" src="https://github.com/user-attachments/assets/0368bf61-999b-4b17-979a-7cc7fd468976" />
-
 
 # Opndrive
 
@@ -167,6 +165,18 @@ We welcome contributions from developers of all skill levels!
 - Node.js 18+
 - PNPM 8+
 - Git
+
+### Cognito Login Configuration
+
+To use Cognito-based login in the frontend, set these variables in your runtime
+environment:
+
+```bash
+NEXT_PUBLIC_COGNITO_USER_POOL_ID=<your_user_pool_id>
+NEXT_PUBLIC_COGNITO_CLIENT_ID=<your_app_client_id>
+```
+
+If these are not configured, login will show a configuration error in the UI.
 
 ### Local Development
 
