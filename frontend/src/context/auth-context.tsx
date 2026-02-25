@@ -10,6 +10,7 @@ import {
   SignedUrlUploadManager,
 } from '@opndrive/s3-api';
 import { useDriveStore } from './data-context';
+import { signOutCognitoUser } from '@/lib/cognito';
 
 interface AuthContextType {
   apiS3: BYOS3ApiProvider | null;
@@ -171,6 +172,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       // Clear localStorage
       localStorage.removeItem(STORAGE_KEY);
+
+      // End Cognito app session
+      signOutCognitoUser();
 
       // Navigate away from authenticated routes first
       router.push('/');

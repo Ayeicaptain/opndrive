@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { getCorsConfig } from '@/config/cors';
+import { getCurrentCognitoUser } from '@/lib/cognito';
 
 export default function ConnectPage() {
   const router = useRouter();
@@ -71,10 +72,14 @@ export default function ConnectPage() {
   const [copiedCode, setCopiedCode] = useState(false);
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem('opndrive_login_session');
-    if (!isLoggedIn) {
-      router.push('/login');
-    }
+    const ensureLogin = async () => {
+      const user = await getCurrentCognitoUser();
+      if (!user) {
+        router.push('/login');
+      }
+    };
+
+    ensureLogin();
   }, [router]);
 
   // Provider configurations
