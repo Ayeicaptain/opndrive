@@ -121,7 +121,7 @@ export default function AuthCallbackPage() {
         expiresAt: Date.now() + expiresIn * 1000,
       });
 
-      router.push('/connect');
+      router.push('/');
     };
 
     completeSignIn();
