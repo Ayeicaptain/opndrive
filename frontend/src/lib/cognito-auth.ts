@@ -24,6 +24,31 @@ function toBase64Url(input: Uint8Array): string {
     .replace(/=+$/g, '');
 }
 
+export function normalizeCognitoClientId(clientId: string): string {
+  const trimmed = clientId.trim().replace(/^['"]|['"]$/g, '');
+
+  // Some users copy values from docs/console labels like "ID=abc..." or "Client ID=abc...".
+  return trimmed.replace(/^(?:client\s*id|id)\s*=\s*/i, '');
+}
+
+export function normalizeCognitoRedirectUri(redirectUri: string): string {
+  const cleaned = redirectUri.trim().replace(/^['"]|['"]$/g, '');
+  if (!cleaned) {
+    return '';
+  }
+
+  if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) {
+    return cleaned;
+  }
+
+  // Support relative callback paths like `/auth/callback` by resolving against the current origin.
+  if (typeof window !== 'undefined') {
+    return new URL(cleaned, window.location.origin).toString();
+  }
+
+  return cleaned;
+}
+
 export function normalizeCognitoDomain(domain: string): string {
   if (!domain) {
     return '';
