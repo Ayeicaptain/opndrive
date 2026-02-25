@@ -1,45 +1,63 @@
 'use client';
 
-type CognitoAuthResult = {
-  AccessToken: string;
-  IdToken: string;
-  RefreshToken?: string;
-  ExpiresIn: number;
-  TokenType: string;
+type StoredSession = {
+  email?: string;
+  accessToken: string;
+  idToken?: string;
+  tokenType?: string;
+  expiresAt: number;
 };
 
-type StoredSession = {
-  email: string;
-  auth: CognitoAuthResult;
-  expiresAt: number;
+type HostedUiTokens = {
+  access_token: string;
+  id_token?: string;
+  token_type?: string;
+  expires_in: string;
 };
 
 const userPoolId = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID;
 const clientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID;
+const cognitoDomain = process.env.NEXT_PUBLIC_COGNITO_DOMAIN;
+const configuredRedirectSignIn = process.env.NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN;
+const configuredRedirectSignOut = process.env.NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT;
+const configuredScope = process.env.NEXT_PUBLIC_COGNITO_SCOPE || 'openid email profile';
+
 const sessionStorageKey = 'opndrive_cognito_session';
 
+function getDefaultRedirectSignIn() {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  return `${window.location.origin}/auth/callback`;
+}
+
+function getDefaultRedirectSignOut() {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  return `${window.location.origin}/`;
+}
+
+function getRedirectSignIn() {
+  return configuredRedirectSignIn || getDefaultRedirectSignIn();
+}
+
+function getRedirectSignOut() {
+  return configuredRedirectSignOut || getDefaultRedirectSignOut();
+}
+
 function ensureConfig() {
-  if (!userPoolId || !clientId) {
+  if (!userPoolId || !clientId || !cognitoDomain) {
     throw new Error(
-      'Cognito is not configured. Set NEXT_PUBLIC_COGNITO_USER_POOL_ID and NEXT_PUBLIC_COGNITO_CLIENT_ID.'
+      'Cognito Hosted UI is not configured. Set NEXT_PUBLIC_COGNITO_USER_POOL_ID, NEXT_PUBLIC_COGNITO_CLIENT_ID and NEXT_PUBLIC_COGNITO_DOMAIN.'
     );
   }
 }
 
-function getCognitoRegion() {
-  ensureConfig();
-  const [region] = userPoolId!.split('_');
-
-  if (!region) {
-    throw new Error('Invalid Cognito User Pool ID format.');
-  }
-
-  return region;
-}
-
-function getCognitoEndpoint() {
-  const region = getCognitoRegion();
-  return `https://cognito-idp.${region}.amazonaws.com/`;
+function normalizeDomain(domain: string) {
+  return domain.endsWith('/') ? domain.slice(0, -1) : domain;
 }
 
 function readStoredSession(): StoredSession | null {
@@ -54,7 +72,7 @@ function readStoredSession(): StoredSession | null {
 
   try {
     const parsed = JSON.parse(raw) as StoredSession;
-    if (!parsed?.auth?.AccessToken || !parsed?.expiresAt) {
+    if (!parsed?.accessToken || !parsed?.expiresAt) {
       return null;
     }
 
@@ -72,59 +90,83 @@ function writeStoredSession(payload: StoredSession) {
   localStorage.setItem(sessionStorageKey, JSON.stringify(payload));
 }
 
-async function cognitoRequest<T>(target: string, body: unknown): Promise<T> {
-  const response = await fetch(getCognitoEndpoint(), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-amz-json-1.1',
-      'X-Amz-Target': `AWSCognitoIdentityProviderService.${target}`,
-    },
-    body: JSON.stringify(body),
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    const message = data?.message || data?.Message || 'Cognito request failed';
-    throw new Error(message);
+function parseJwtEmail(idToken?: string): string | undefined {
+  if (!idToken) {
+    return undefined;
   }
 
-  return data as T;
+  try {
+    const parts = idToken.split('.');
+    if (parts.length < 2) {
+      return undefined;
+    }
+
+    const payload = JSON.parse(atob(parts[1])) as { email?: string };
+    return payload.email;
+  } catch {
+    return undefined;
+  }
 }
 
-export async function signInWithCognito(
-  email: string,
-  password: string
-): Promise<CognitoAuthResult> {
+export function getHostedUiSignInUrl() {
   ensureConfig();
 
-  const payload = {
-    AuthFlow: 'USER_PASSWORD_AUTH',
-    ClientId: clientId,
-    AuthParameters: {
-      USERNAME: email,
-      PASSWORD: password,
-    },
-  };
+  const authorizeUrl = new URL(`${normalizeDomain(cognitoDomain!)}/oauth2/authorize`);
+  authorizeUrl.searchParams.set('client_id', clientId!);
+  authorizeUrl.searchParams.set('response_type', 'token');
+  authorizeUrl.searchParams.set('scope', configuredScope);
+  authorizeUrl.searchParams.set('redirect_uri', getRedirectSignIn());
 
-  const data = await cognitoRequest<{ AuthenticationResult?: CognitoAuthResult }>(
-    'InitiateAuth',
-    payload
-  );
+  return authorizeUrl.toString();
+}
 
-  if (!data.AuthenticationResult?.AccessToken || !data.AuthenticationResult?.IdToken) {
-    throw new Error('Cognito authentication failed. Missing auth tokens.');
+export function startHostedUiSignIn() {
+  if (typeof window === 'undefined') {
+    return;
   }
 
-  const expiresAt = Date.now() + data.AuthenticationResult.ExpiresIn * 1000;
-  writeStoredSession({ email, auth: data.AuthenticationResult, expiresAt });
+  const loginUrl = getHostedUiSignInUrl();
+  window.location.assign(loginUrl);
+}
 
-  return data.AuthenticationResult;
+export function handleHostedUiCallback(hashValue?: string): StoredSession {
+  ensureConfig();
+
+  const source = hashValue ?? (typeof window !== 'undefined' ? window.location.hash : '');
+  const hash = source.startsWith('#') ? source.slice(1) : source;
+  const params = new URLSearchParams(hash);
+
+  const error = params.get('error_description') || params.get('error');
+  if (error) {
+    throw new Error(error);
+  }
+
+  const tokens = Object.fromEntries(params.entries()) as Partial<HostedUiTokens>;
+  if (!tokens.access_token || !tokens.expires_in) {
+    throw new Error('Hosted UI callback is missing required tokens.');
+  }
+
+  const expiresInSeconds = Number(tokens.expires_in);
+  if (!Number.isFinite(expiresInSeconds) || expiresInSeconds <= 0) {
+    throw new Error('Invalid token expiration from Hosted UI callback.');
+  }
+
+  const session: StoredSession = {
+    accessToken: tokens.access_token,
+    idToken: tokens.id_token,
+    tokenType: tokens.token_type,
+    email: parseJwtEmail(tokens.id_token),
+    expiresAt: Date.now() + expiresInSeconds * 1000,
+  };
+
+  writeStoredSession(session);
+  return session;
 }
 
 export async function getCurrentCognitoUser(): Promise<{
   email?: string;
   accessToken: string;
+  idToken?: string;
 } | null> {
   try {
     ensureConfig();
@@ -135,13 +177,14 @@ export async function getCurrentCognitoUser(): Promise<{
     }
 
     if (Date.now() >= session.expiresAt) {
-      signOutCognitoUser();
+      localStorage.removeItem(sessionStorageKey);
       return null;
     }
 
     return {
       email: session.email,
-      accessToken: session.auth.AccessToken,
+      accessToken: session.accessToken,
+      idToken: session.idToken,
     };
   } catch {
     return null;
@@ -154,4 +197,14 @@ export function signOutCognitoUser() {
   }
 
   localStorage.removeItem(sessionStorageKey);
+
+  try {
+    ensureConfig();
+    const logoutUrl = new URL(`${normalizeDomain(cognitoDomain!)}/logout`);
+    logoutUrl.searchParams.set('client_id', clientId!);
+    logoutUrl.searchParams.set('logout_uri', getRedirectSignOut());
+    window.location.assign(logoutUrl.toString());
+  } catch {
+    // no-op when not configured
+  }
 }

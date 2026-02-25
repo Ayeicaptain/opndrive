@@ -174,9 +174,15 @@ environment:
 ```bash
 NEXT_PUBLIC_COGNITO_USER_POOL_ID=<your_user_pool_id>
 NEXT_PUBLIC_COGNITO_CLIENT_ID=<your_app_client_id>
+NEXT_PUBLIC_COGNITO_DOMAIN=<your_cognito_domain> # example: https://your-domain.auth.us-east-1.amazoncognito.com
+# Optional overrides:
+# NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_IN=http://localhost:3000/auth/callback
+# NEXT_PUBLIC_COGNITO_REDIRECT_SIGN_OUT=http://localhost:3000/
+# NEXT_PUBLIC_COGNITO_SCOPE=openid email profile
 ```
 
-If these are not configured, login will show a configuration error in the UI.
+If required variables are not configured, login will show a configuration error
+in the UI.
 
 ### Local Development
 
