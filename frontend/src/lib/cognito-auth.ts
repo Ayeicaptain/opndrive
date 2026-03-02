@@ -54,6 +54,37 @@ export function resolveCognitoRedirectUri(value: string): string {
   }
 }
 
+/**
+ * Chooses a redirect URI that is safe for the currently running frontend origin.
+ *
+ * This protects local development when `NEXT_PUBLIC_COGNITO_REDIRECT_URI` is set
+ * to a full Hosted UI URL whose nested `redirect_uri` points to another domain.
+ */
+export function resolveRuntimeCognitoRedirectUri(value: string): string {
+  const resolved = resolveCognitoRedirectUri(value);
+
+  if (typeof window === 'undefined') {
+    return resolved;
+  }
+
+  const fallback = `${window.location.origin}/auth/callback`;
+
+  if (!resolved) {
+    return fallback;
+  }
+
+  try {
+    const redirectUrl = new URL(resolved, window.location.origin);
+    if (redirectUrl.origin !== window.location.origin) {
+      return fallback;
+    }
+
+    return redirectUrl.toString();
+  } catch {
+    return fallback;
+  }
+}
+
 export function generateRandomString(length = 64): string {
   const values = new Uint8Array(length);
   crypto.getRandomValues(values);
