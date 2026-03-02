@@ -36,10 +36,6 @@ export function normalizeCognitoDomain(domain: string): string {
   return `https://${domain.replace(/\/$/, '')}`;
 }
 
-/**
- * Supports both a plain callback URL and a full Cognito Hosted UI URL.
- * If a full Hosted UI URL is provided, extract its `redirect_uri` query value.
- */
 export function resolveCognitoRedirectUri(value: string): string {
   if (!value) {
     return '';
@@ -54,12 +50,6 @@ export function resolveCognitoRedirectUri(value: string): string {
   }
 }
 
-/**
- * Chooses a redirect URI that is safe for the currently running frontend origin.
- *
- * This protects local development when `NEXT_PUBLIC_COGNITO_REDIRECT_URI` is set
- * to a full Hosted UI URL whose nested `redirect_uri` points to another domain.
- */
 export function resolveRuntimeCognitoRedirectUri(value: string): string {
   const resolved = resolveCognitoRedirectUri(value);
 
@@ -92,6 +82,10 @@ export function generateRandomString(length = 64): string {
 }
 
 export async function createCodeChallenge(verifier: string): Promise<string> {
+  if (!crypto?.subtle) {
+    throw new Error('Web Crypto API is not available. Please use a modern browser.');
+  }
+  
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
   return toBase64Url(new Uint8Array(digest));
 }
@@ -119,7 +113,8 @@ export function consumePkceVerifier(): string | null {
 export async function exchangeCodeForTokens(
   config: CognitoConfig,
   code: string,
-  codeVerifier: string
+  codeVerifier: string,
+  clientSecret?: string
 ): Promise<CognitoTokenResponse> {
   const tokenUrl = new URL('/oauth2/token', normalizeCognitoDomain(config.domain));
   const body = new URLSearchParams({
@@ -129,6 +124,10 @@ export async function exchangeCodeForTokens(
     code_verifier: codeVerifier,
     redirect_uri: config.redirectUri,
   });
+
+  if (clientSecret) {
+    body.set('client_secret', clientSecret);
+  }
 
   const response = await fetch(tokenUrl.toString(), {
     method: 'POST',

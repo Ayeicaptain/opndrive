@@ -95,7 +95,8 @@ export default function AuthCallbackPage() {
               scope: process.env.NEXT_PUBLIC_COGNITO_SCOPE ?? 'openid email profile',
             },
             authorizationCode,
-            codeVerifier
+            codeVerifier,
+            process.env.NEXT_PUBLIC_COGNITO_CLIENT_SECRET
           );
           idToken = tokenResponse.id_token;
           accessToken = tokenResponse.access_token;

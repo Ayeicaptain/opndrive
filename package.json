@@ -33,19 +33,19 @@
     "@eslint/js": "^9.31.0",
     "@typescript-eslint/eslint-plugin": "^8.38.0",
     "@typescript-eslint/parser": "^8.38.0",
-    "eslint": "^9.31.0",
+    "eslint": "^9.39.3",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.2",
     "prettier": "^3.6.2",
     "typescript-eslint": "^8.19.0"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,mjs,cjs}": [
-      "eslint --fix --max-warnings=0",
-      "prettier --write"
-    ],
-    "*.{json,md,yml,yaml,css,scss,html}": [
-      "prettier --write"
-    ]
-  }
+  "*.{js,jsx,ts,tsx,mjs,cjs}": [
+    "npx eslint --fix --max-warnings=0",
+    "npx prettier --write"
+  ],
+  "*.{json,md,yml,yaml,css,scss,html}": [
+    "npx prettier --write"
+  ]
+}
 }
