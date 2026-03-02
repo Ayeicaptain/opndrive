@@ -1,11 +1,7 @@
 import { redirect } from 'next/navigation';
 
 export default function LandingPage() {
-  const cognitoLoginUrl = process.env.NEXT_PUBLIC_COGNITO_REDIRECT_URI;
-
-  if (cognitoLoginUrl) {
-    redirect(cognitoLoginUrl);
-  }
-
+  // Always route through the local login page so the app can generate
+  // state/PKCE and control the callback URI used for local development.
   redirect('/login');
 }
