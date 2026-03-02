@@ -10,7 +10,7 @@ import {
   consumeOauthState,
   consumePkceVerifier,
   exchangeCodeForTokens,
-  resolveCognitoRedirectUri,
+  resolveRuntimeCognitoRedirectUri,
 } from '@/lib/cognito-auth';
 
 type CallbackStatus = 'processing' | 'error';
@@ -68,7 +68,7 @@ export default function AuthCallbackPage() {
       if (authorizationCode && (!idToken || !accessToken)) {
         const cognitoDomain = process.env.NEXT_PUBLIC_COGNITO_DOMAIN ?? '';
         const cognitoClientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID ?? '';
-        const cognitoRedirectUri = resolveCognitoRedirectUri(
+        const cognitoRedirectUri = resolveRuntimeCognitoRedirectUri(
           process.env.NEXT_PUBLIC_COGNITO_REDIRECT_URI ?? ''
         );
 
