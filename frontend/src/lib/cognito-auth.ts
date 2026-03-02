@@ -1,5 +1,6 @@
 const AUTH_STATE_KEY = 'opndrive_cognito_oauth_state';
 const AUTH_VERIFIER_KEY = 'opndrive_cognito_pkce_verifier';
+const POST_AUTH_REDIRECT_KEY = 'opndrive_cognito_post_auth_redirect';
 
 export interface CognitoConfig {
   domain: string;
@@ -114,6 +115,30 @@ export function consumePkceVerifier(): string | null {
   const verifier = sessionStorage.getItem(AUTH_VERIFIER_KEY);
   sessionStorage.removeItem(AUTH_VERIFIER_KEY);
   return verifier;
+}
+
+function isSafeInternalPath(path: string): boolean {
+  return path.startsWith('/') && !path.startsWith('//');
+}
+
+export function savePostAuthRedirect(path: string): void {
+  if (!isSafeInternalPath(path)) {
+    sessionStorage.removeItem(POST_AUTH_REDIRECT_KEY);
+    return;
+  }
+
+  sessionStorage.setItem(POST_AUTH_REDIRECT_KEY, path);
+}
+
+export function consumePostAuthRedirect(defaultPath = '/connect'): string {
+  const path = sessionStorage.getItem(POST_AUTH_REDIRECT_KEY);
+  sessionStorage.removeItem(POST_AUTH_REDIRECT_KEY);
+
+  if (!path || !isSafeInternalPath(path)) {
+    return defaultPath;
+  }
+
+  return path;
 }
 
 export async function exchangeCodeForTokens(

@@ -9,6 +9,7 @@ import { saveLoginSession } from '@/lib/auth-session';
 import {
   consumeOauthState,
   consumePkceVerifier,
+  consumePostAuthRedirect,
   exchangeCodeForTokens,
   resolveRuntimeCognitoRedirectUri,
 } from '@/lib/cognito-auth';
@@ -121,7 +122,7 @@ export default function AuthCallbackPage() {
         expiresAt: Date.now() + expiresIn * 1000,
       });
 
-      router.push('/connect');
+      router.push(consumePostAuthRedirect('/connect'));
     };
 
     completeSignIn();
