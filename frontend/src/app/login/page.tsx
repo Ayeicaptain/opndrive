@@ -10,7 +10,7 @@ import {
   createCodeChallenge,
   generateRandomString,
   normalizeCognitoDomain,
-  resolveCognitoRedirectUri,
+  resolveRuntimeCognitoRedirectUri,
   saveOauthState,
   savePkceVerifier,
 } from '@/lib/cognito-auth';
@@ -22,7 +22,7 @@ export default function LoginPage() {
 
   const cognitoDomain = process.env.NEXT_PUBLIC_COGNITO_DOMAIN ?? '';
   const cognitoClientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID ?? '';
-  const cognitoRedirectUri = resolveCognitoRedirectUri(
+  const cognitoRedirectUri = resolveRuntimeCognitoRedirectUri(
     process.env.NEXT_PUBLIC_COGNITO_REDIRECT_URI ?? ''
   );
   const cognitoLoginUrl = process.env.NEXT_PUBLIC_COGNITO_LOGIN_URL ?? '';
