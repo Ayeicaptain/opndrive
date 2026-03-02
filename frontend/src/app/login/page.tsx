@@ -11,6 +11,7 @@ import {
   generateRandomString,
   normalizeCognitoDomain,
   resolveRuntimeCognitoRedirectUri,
+  savePostAuthRedirect,
   saveOauthState,
   savePkceVerifier,
 } from '@/lib/cognito-auth';
@@ -73,6 +74,9 @@ export default function LoginPage() {
 
     try {
       const loginUrl = new URL(baseLoginUrl.toString());
+      const nextPath = new URLSearchParams(window.location.search).get('next') || '/connect';
+      savePostAuthRedirect(nextPath);
+
       const state = generateRandomString(32);
       saveOauthState(state);
       loginUrl.searchParams.set('state', state);
