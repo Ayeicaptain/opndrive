@@ -2,7 +2,7 @@ export const faqData = [
   {
     question: 'How do I connect my AWS S3 bucket to Opndrive?',
     answer:
-      "Visit the Connect page (/connect) and provide your AWS credentials: Access Key ID, Secret Access Key, Bucket Name, AWS Region, and optionally a Prefix. Your credentials are stored locally in your browser and never sent to our servers. You'll also need to configure CORS policy on your S3 bucket for browser access.",
+      "Visit the Connect page (/connect), sign in through AWS Cognito, and then provide your AWS credentials: Access Key ID, Secret Access Key, Bucket Name, AWS Region, and optionally a Prefix. Your credentials are stored locally in your browser and never sent to our servers. You'll also need to configure CORS policy on your S3 bucket for browser access.",
   },
   {
     question: 'What AWS S3 permissions does Opndrive require?',
