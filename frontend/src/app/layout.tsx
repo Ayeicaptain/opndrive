@@ -5,6 +5,7 @@ import { ZustandBridge } from '@/context/zustand-bridge';
 import { UploadProvider } from '@/features/upload/context/upload-context';
 import { ThemeProvider } from '@/providers/theme-provider';
 import { Metadata } from 'next';
+import { OidcProvider } from '@/providers/oidc-provider';
 
 export const metadata: Metadata = {
   title: 'Opndrive - Open-source S3 Compatible Storage Interface',
@@ -152,14 +153,16 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <AuthProvider>
-          <ZustandBridge />
-          <ThemeProvider defaultTheme="system" storageKey="ui-theme">
-            <UploadProvider>
-              <NotificationProvider>{children}</NotificationProvider>
-            </UploadProvider>
-          </ThemeProvider>
-        </AuthProvider>
+        <OidcProvider>
+          <AuthProvider>
+            <ZustandBridge />
+            <ThemeProvider defaultTheme="system" storageKey="ui-theme">
+              <UploadProvider>
+                <NotificationProvider>{children}</NotificationProvider>
+              </UploadProvider>
+            </ThemeProvider>
+          </AuthProvider>
+        </OidcProvider>
       </body>
     </html>
   );

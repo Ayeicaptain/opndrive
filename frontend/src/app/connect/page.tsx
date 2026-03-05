@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { getCorsConfig } from '@/config/cors';
+import { OidcExamplePanel } from '@/components/auth/oidc-example-panel';
 
 export default function ConnectPage() {
   const router = useRouter();
@@ -260,6 +261,15 @@ export default function ConnectPage() {
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-4xl">
+        <section className="mb-8 rounded-lg border border-border bg-card p-6">
+          <h1 className="mb-2 text-xl font-semibold text-foreground">Cognito OIDC Example</h1>
+          <p className="mb-4 text-sm text-muted-foreground">
+            Use this example integration to sign in with your Cognito user pool before connecting
+            storage credentials.
+          </p>
+          <OidcExamplePanel />
+        </section>
+
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Form Section */}
           <div className="space-y-6">
