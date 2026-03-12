@@ -140,6 +140,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       // You can redirect somewhere after login
       if (pathname === '/' || pathname === '/login') {
+        console.log('login');
         router.push('/dashboard');
       }
     } catch (error) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Button, CustomDropdown, type DropdownOption } from '@/shared/components/ui';
@@ -34,6 +34,7 @@ export default function ConnectPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState('aws');
+  const formRef = useRef<HTMLFormElement>(null);
 
   // AWS Regions
   const awsRegions: DropdownOption[] = [
@@ -74,8 +75,26 @@ export default function ConnectPage() {
   useEffect(() => {
     if (!hasValidLoginSession()) {
       router.push('/login');
+      return;
     }
+
+    setFormCreds((prev) => ({
+      ...prev,
+      accessKeyId: process.env.NEXT_PUBLIC_S3_ACCESS_KEY_ID || '',
+      secretAccessKey: process.env.NEXT_PUBLIC_S3_SECRET_ACCESS_KEY || '',
+      bucketName: process.env.NEXT_PUBLIC_S3_BUCKET_NAME || '',
+      region: process.env.NEXT_PUBLIC_S3_REGION || prev.region,
+    }));
   }, [router]);
+  useEffect(() => {
+    if (formCreds.accessKeyId && formCreds.secretAccessKey && formCreds.bucketName) {
+      const timer = setTimeout(() => {
+        formRef.current?.requestSubmit();
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [formCreds]);
 
   // Provider configurations
   const providerConfigs = {
@@ -250,7 +269,7 @@ export default function ConnectPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen invisible absolute top-0 left-0 w-full h-full">
       {/* Header */}
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4">
@@ -303,7 +322,7 @@ export default function ConnectPage() {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-sm font-medium text-foreground">
                   <Key className="h-4 w-4" />
