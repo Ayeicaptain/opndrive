@@ -11,6 +11,9 @@ import {
 } from '@opndrive/s3-api';
 import { useDriveStore } from './data-context';
 
+// ✅ NEW: logout flag
+const LOGGED_OUT_KEY = 'just_logged_out';
+
 interface AuthContextType {
   apiS3: BYOS3ApiProvider | null;
   uploadManager: UploadManager | null;
@@ -56,21 +59,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Get clearAllData at the top level where hooks are allowed
   const clearAllData = useDriveStore((state) => state.clearAllData);
 
-  // Restore session from localStorage on app load
+  // ✅ FIXED: Restore session with logout protection
   useEffect(() => {
     const checkAuth = async () => {
       setIsLoading(true);
+
       try {
+        // ✅ Prevent auto-login after logout
+        const justLoggedOut = localStorage.getItem(LOGGED_OUT_KEY);
+        if (justLoggedOut === 'true') {
+          localStorage.removeItem(LOGGED_OUT_KEY);
+          setIsLoading(false);
+          return;
+        }
+
         const storedCreds = localStorage.getItem(STORAGE_KEY);
+
         if (storedCreds) {
           const creds = JSON.parse(storedCreds);
+
           if (isValidCreds(creds)) {
             const api = new BYOS3ApiProvider(creds, 'BYO');
 
-            // Initialize both upload managers
             const manager = UploadManager.getInstance({
               s3: api.getS3Client(),
               bucket: api.getBucketName(),
@@ -90,8 +102,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setUserCreds(creds);
             setApiS3(api);
 
-            // Only redirect to dashboard if user is on home page.
-            // Keep users on /connect so they can (re)configure credentials after login.
             if (pathname === '/') {
               router.push('/dashboard');
             }
@@ -110,13 +120,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     checkAuth();
   }, []);
 
-  // Create a session & persist in localStorage
+  // Create session
   const createSession = async (creds: Credentials): Promise<void> => {
     try {
       setIsLoading(true);
+
       const api = new BYOS3ApiProvider(creds, 'BYO');
 
-      // Initialize both upload managers
       const manager = UploadManager.getInstance({
         s3: api.getS3Client(),
         bucket: api.getBucketName(),
@@ -131,16 +141,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         expiresInSeconds: 3600,
       });
 
-      // Persist to state and localStorage
       setUserCreds(creds);
       setApiS3(api);
       setUploadManager(manager);
       setSignedUrlUploadManager(signedUrlManager);
+
       localStorage.setItem(STORAGE_KEY, JSON.stringify(creds));
 
-      // You can redirect somewhere after login
+      // ✅ Clear logout flag when logging back in
+      localStorage.removeItem(LOGGED_OUT_KEY);
+
       if (pathname === '/' || pathname === '/login') {
-        console.log('login');
         router.push('/dashboard');
       }
     } catch (error) {
@@ -151,49 +162,34 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Clear session completely
+  // ✅ FIXED: Proper logout
   const clearSession = () => {
     try {
-      // Set loading state to prevent components from using context values
       setIsLoading(true);
 
-      // Clean up upload manager if it exists
-      if (uploadManager) {
-        try {
-          // Cancel any ongoing uploads before clearing
-          // Note: Implement proper cleanup based on UploadManager API
-        } catch (error) {
-          console.warn('Error cleaning up uploads during logout:', error);
-        }
-      }
+      // ✅ Prevent auto-login
+      localStorage.setItem(LOGGED_OUT_KEY, 'true');
 
-      // Clear all drive store data to prevent data leakage between sessions
+      // ✅ Clear ALL sessions
+      localStorage.removeItem(STORAGE_KEY); // s3 session
+      localStorage.removeItem('opndrive_login_session'); // cognito session
+      sessionStorage.clear();
+
+      // Clear Zustand / app state
       clearAllData();
 
-      // Clear localStorage
-      localStorage.removeItem(STORAGE_KEY);
+      // Reset state
+      setUserCreds(null);
+      setApiS3(null);
+      setUploadManager(null);
+      setSignedUrlUploadManager(null);
 
-      // Navigate away from authenticated routes first
-      router.push('/');
-
-      // Use setTimeout to allow navigation and component unmounting to complete
-      setTimeout(() => {
-        setUserCreds(null);
-        setApiS3(null);
-        setUploadManager(null);
-        setSignedUrlUploadManager(null);
-        setTimeout(() => setIsLoading(false), 50);
-      }, 100);
+      // ✅ Redirect to login (important)
+      router.push('/login');
     } catch (error) {
       console.error('Error clearing session:', error);
-      setTimeout(() => {
-        setUserCreds(null);
-        setApiS3(null);
-        setUploadManager(null);
-        setSignedUrlUploadManager(null);
-        setIsLoading(false);
-        clearAllData();
-      }, 50);
+    } finally {
+      setTimeout(() => setIsLoading(false), 100);
     }
   };
 
